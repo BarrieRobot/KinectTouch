@@ -5,6 +5,10 @@ project( KinectTouch )
 file(GLOB OSC
   "src/oscpack/osc/*.h"
   "src/oscpack/osc/*.cpp"
+  "src/oscpack/ip/*.h"
+  "src/oscpack/ip/*.cpp"
+  "src/oscpack/ip/posix/*.h"
+  "src/oscpack/ip/posix/*.cpp"
 )
 
 file(GLOB TUIO
@@ -15,12 +19,12 @@ file(GLOB TUIO
 find_package( OpenCV REQUIRED )
 find_package(Threads REQUIRED)
 
-#add_executable( KinectTouch src/KinectTouch.cpp ${OSC} ${TUIO})
-add_executable( KinectTouch src/KinectTouch.cpp)
+add_executable( KinectTouch src/KinectTouch.cpp ${OSC} ${TUIO})
+#add_executable( KinectTouch src/KinectTouch.cpp)
 
 include_directories(
-  "/usr/include/ni"
   "src/TUIO"
+  "/usr/include/ni"
   "src/oscpack"
 )
 
