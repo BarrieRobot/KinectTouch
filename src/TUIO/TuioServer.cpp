@@ -24,6 +24,8 @@
 using namespace TUIO;
 using namespace osc;
 
+#define NSEC_SECOND 1000000000
+
 #ifndef WIN32
 static void* ThreadFunc( void* obj )
 #else
@@ -34,7 +36,9 @@ static DWORD WINAPI ThreadFunc( LPVOID obj )
 	while ((tuioServer->isConnected()) && (tuioServer->periodicMessagesEnabled())) {
 		tuioServer->sendFullMessages();
 #ifndef WIN32
-		usleep(USEC_SECOND*tuioServer->getUpdateInterval());
+                timespec sleepValue = {0};
+                sleepValue.tv_nsec = NSEC_SECOND*tuioServer->getUpdateInterval();
+                nanosleep(&sleepValue, NULL);
 #else
 		Sleep(MSEC_SECOND*tuioServer->getUpdateInterval());
 #endif
