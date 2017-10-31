@@ -106,10 +106,15 @@ int main() {
 	const Scalar debugColor1(255,0,0);
 	const Scalar debugColor2(255,255,255);
 
+	// int xMin = 110;
+	// int xMax = 560;
+	// int yMin = 120;
+	// int yMax = 320;
+
 	int xMin = 110;
-	int xMax = 560;
-	int yMin = 120;
-	int yMax = 320;
+	int xMax = 540;
+	int yMin = 260;
+	int yMax = 480;
 
 	Mat1s depth(480, 640); // 16 bit depth (in millimeters)
 	Mat1b depth8(480, 640); // 8 bit depth
@@ -136,7 +141,7 @@ int main() {
 		tuio = new TuioServer("192.168.0.2",3333,false);
 	}
 	TuioTime time;
-
+	tuio->enablePeriodicMessages();
 
 	// create some sliders
 	namedWindow(windowName);
@@ -153,6 +158,12 @@ int main() {
 	}
 	average(buffer, background);
 
+
+  float minx = 1;
+	float maxx = 0;
+	float miny = 1;
+	float maxy = 0;
+
 	while ( (char) waitKey(1) != (char) 27 ) {
 		// read available data
 		xnContext.WaitAndUpdateAll();
@@ -160,8 +171,6 @@ int main() {
 		// update 16 bit depth matrix
 		depth.data = (uchar*) xnDepthGenerator.GetDepthMap();
 		//xnImgeGenertor.GetGrayscale8ImageMap()
-
-
 
 		// update rgb image
 		//rgb.data = (uchar*) xnImgeGenertor.GetRGB24ImageMap(); // segmentation fault here
@@ -193,25 +202,32 @@ int main() {
 
 		// send TUIO cursors
 
-		time = TuioTime::getSessionTime();
-		tuio->initFrame(time);
+	//	time = TuioTime::getSessionTime();
+	//	tuio->initFrame(time);
 
 		for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
 			float cursorX = (touchPoints[i].x - xMin) / (xMax - xMin);
 			float cursorY = 1 - (touchPoints[i].y - yMin)/(yMax - yMin);
-			TuioCursor* cursor = tuio->getClosestTuioCursor(cursorX,cursorY);
+
+      // record touched area
+			if (cursorX < minx) minx = cursorX;
+			if (cursorX > maxx) maxx = cursorX;
+			if (cursorY < miny) miny = cursorY;
+			if (cursorY > maxy) maxy = cursorY;
+
+			// printf("Touch found at %f, %f\n", cursorX, cursorY);
+		/*	TuioCursor* cursor = tuio->getClosestTuioCursor(cursorX,cursorY);
 			// TODO improve tracking (don't move cursors away, that might be closer to another touch point)
 			if (cursor == NULL || cursor->getTuioTime() == time) {
 				tuio->addTuioCursor(cursorX,cursorY);
 			} else {
 				tuio->updateTuioCursor(cursor, cursorX, cursorY);
-			}
+			}*/
 		}
 
-		tuio->stopUntouchedMovingCursors();
-		tuio->removeUntouchedStoppedCursors();
-		tuio->commitFrame();
-
+		// tuio->removeUntouchedStoppedCursors();
+		// tuio->stopUntouchedMovingCursors();
+		// tuio->commitFrame();
 
 		// draw debug frame
 		depth.convertTo(depth8, CV_8U, 255 / debugFrameMaxDepth); // render depth to debug frame
@@ -227,5 +243,9 @@ int main() {
 		// imshow("image", rgb);
 	}
 
+	printf("Min X is %f\n", minx);
+	printf("Max X is %f\n", maxx);
+	printf("Min Y is %f\n", miny);
+  printf("Max Y is %f\n", maxy);
 	return 0;
 }

@@ -45,7 +45,7 @@
 		</Node>
 
 		<!-- Create an image node. If it fails, continue anyway. -->
-		<Node type="Image" stopOnError="false" />
+		<!-- <Node type="Image" stopOnError="false" /> -->
 
 		<!-- Uncomment nodes from here if you need them.
 		<Node type="Audio" />
