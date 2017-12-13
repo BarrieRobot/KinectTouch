@@ -65,8 +65,8 @@ int initOpenNI(const XnChar* fname) {
 	CHECK_RC(nRetVal, "InitFromXmlFile");
 
 	// initialize depth generator
-	nRetVal = xnContext.FindExistingNode(XN_NODE_TYPE_DEPTH, xnDepthGenerator);
-	CHECK_RC(nRetVal, "FindExistingNode(XN_NODE_TYPE_DEPTH)");
+	// nRetVal = xnContext.FindExistingNode(XN_NODE_TYPE_DEPTH, xnDepthGenerator);
+	// CHECK_RC(nRetVal, "FindExistingNode(XN_NODE_TYPE_DEPTH)");
 
 	// initialize image generator
 	nRetVal = xnContext.FindExistingNode(XN_NODE_TYPE_IMAGE, xnImgeGenertor);
@@ -115,6 +115,7 @@ int main() {
 	int xMax = 540;
 	int yMin = 260;
 	int yMax = 480;
+	int Slope = 0;
 
 	Mat1s depth(480, 640); // 16 bit depth (in millimeters)
 	Mat1b depth8(480, 640); // 8 bit depth
@@ -149,6 +150,7 @@ int main() {
 	createTrackbar("xMax", windowName, &xMax, 640);
 	createTrackbar("yMin", windowName, &yMin, 480);
 	createTrackbar("yMax", windowName, &yMax, 480);
+	createTrackbar("Slope", windowName, &Slope, 320);
 
 	// create background model (average depth)
 	for (unsigned int i=0; i<nBackgroundTrain; i++) {
@@ -229,11 +231,25 @@ int main() {
 		// tuio->stopUntouchedMovingCursors();
 		// tuio->commitFrame();
 
-		// draw debug frame
+		// draw debug frame  [xMax-Slope,yMin],[xMax,yMax],[xMin,yMax],[xMin+Slope,yMin],[xMax-Slope,yMin]
+		/*Point rightttop(xMax-Slope,yMin);
+		Point rightbot(xMax,yMax);
+		Point leftbot(xMin,yMax);
+		Point lefttop(xMin+Slope,yMin);
+		Point rightttop2(xMax-Slope,yMin);
+		vector< vector<Point> >  co_ordinates;
+		co_ordinates.push_back(vector<Point>());
+		co_ordinates[0].push_back(rightttop);
+		co_ordinates[0].push_back(rightbot);
+		co_ordinates[0].push_back(leftbot);
+		co_ordinates[0].push_back(lefttop);
+
+		Point pts[4] = {rightttop, rightbot, leftbot, lefttop};*/
 		depth.convertTo(depth8, CV_8U, 255 / debugFrameMaxDepth); // render depth to debug frame
 		cvtColor(depth8, debug, CV_GRAY2BGR);
 		debug.setTo(debugColor0, touch);  // touch mask
-		rectangle(debug, roi, debugColor1, 2); // surface boundaries
+		//polylines(debug, co_ordinates, 4 /* numpoints */, 2 /* ncontours */, false); // surface boundaries
+
 		for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
 			circle(debug, touchPoints[i], 5, debugColor2, CV_FILLED);
 		}
