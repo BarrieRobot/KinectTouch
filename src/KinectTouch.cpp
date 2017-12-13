@@ -65,8 +65,8 @@ int initOpenNI(const XnChar* fname) {
 	CHECK_RC(nRetVal, "InitFromXmlFile");
 
 	// initialize depth generator
-	// nRetVal = xnContext.FindExistingNode(XN_NODE_TYPE_DEPTH, xnDepthGenerator);
-	// CHECK_RC(nRetVal, "FindExistingNode(XN_NODE_TYPE_DEPTH)");
+	nRetVal = xnContext.FindExistingNode(XN_NODE_TYPE_DEPTH, xnDepthGenerator);
+	CHECK_RC(nRetVal, "FindExistingNode(XN_NODE_TYPE_DEPTH)");
 
 	// initialize image generator
 	nRetVal = xnContext.FindExistingNode(XN_NODE_TYPE_IMAGE, xnImgeGenertor);
@@ -232,7 +232,7 @@ int main() {
 		// tuio->commitFrame();
 
 		// draw debug frame  [xMax-Slope,yMin],[xMax,yMax],[xMin,yMax],[xMin+Slope,yMin],[xMax-Slope,yMin]
-		/*Point rightttop(xMax-Slope,yMin);
+		Point rightttop(xMax-Slope,yMin);
 		Point rightbot(xMax,yMax);
 		Point leftbot(xMin,yMax);
 		Point lefttop(xMin+Slope,yMin);
@@ -244,11 +244,11 @@ int main() {
 		co_ordinates[0].push_back(leftbot);
 		co_ordinates[0].push_back(lefttop);
 
-		Point pts[4] = {rightttop, rightbot, leftbot, lefttop};*/
+		Point pts[4] = {rightttop, rightbot, leftbot, lefttop};
 		depth.convertTo(depth8, CV_8U, 255 / debugFrameMaxDepth); // render depth to debug frame
 		cvtColor(depth8, debug, CV_GRAY2BGR);
 		debug.setTo(debugColor0, touch);  // touch mask
-		//polylines(debug, co_ordinates, 4 /* numpoints */, 2 /* ncontours */, false); // surface boundaries
+		polylines(debug, co_ordinates, 4 /* numpoints */, 4 /* ncontours */, false); // surface boundaries
 
 		for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
 			circle(debug, touchPoints[i], 5, debugColor2, CV_FILLED);
