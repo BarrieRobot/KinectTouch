@@ -232,14 +232,14 @@ int main() {
 	//	tuio->initFrame(time);
 
 		for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
-            float slopePerPix = slope / (yMax-yMin);
+            float slopePerPix = fslope / (yMax-yMin);
             float touchy = static_cast<int>(touchPoints[i].y - yMin);
             float slopedAtCurrHeight = ((yMax-yMin) - touchy) * slopePerPix;
 
 			float cursorX = (touchPoints[i].x - xMin) / ((xMax - xMin)-slopedAtCurrHeight);
 			float cursorY = 1 - (touchPoints[i].y - yMin)/(yMax - yMin);
             printf("cursorX: %f, cursorY: %f\n", cursorX, cursorY);
-            
+
             // record touched area
 			if (cursorX < minx) minx = cursorX;
 			if (cursorX > maxx) maxx = cursorX;
