@@ -89,13 +89,11 @@ void average(vector<Mat1s>& frames, Mat1s& mean) {
 	acc.convertTo(mean, CV_16SC1);
 }
 
-
-
 int main() {
 
 	const unsigned int nBackgroundTrain = 30;
-	const unsigned short touchDepthMin = 10;
-	const unsigned short touchDepthMax = 20;
+	const unsigned short touchDepthMin = 15;
+	const unsigned short touchDepthMax = 25;
 	const unsigned int touchMinArea = 50;
 
 	const bool localClientMode = true; 					// connect to a local client
@@ -111,11 +109,11 @@ int main() {
 	// int yMin = 120;
 	// int yMax = 320;
 
-	int xMin = 110;
+	int xMin = 124;
 	int xMax = 540;
-	int yMin = 260;
-	int yMax = 480;
-	int slope = 0;
+	int yMin = 124;
+	int yMax = 413;
+	int slope = 23;
 
 	Mat1s depth(480, 640); // 16 bit depth (in millimeters)
 	Mat1b depth8(480, 640); // 8 bit depth
@@ -133,17 +131,6 @@ int main() {
 
 	initOpenNI("../niConfig.xml");
 
-	// TUIO server object
-
-	TuioServer* tuio;
-	if (localClientMode) {
-		tuio = new TUIO::TuioServer();
-	} else {
-		tuio = new TuioServer("192.168.0.2",3333,false);
-	}
-	TuioTime time;
-	tuio->enablePeriodicMessages();
-
 	// create some sliders
 	namedWindow(windowName);
 	createTrackbar("xMin", windowName, &xMin, 640);
@@ -160,7 +147,7 @@ int main() {
 	}
 	average(buffer, background);
 
-
+	// Detected touched coordinates
   float minx = 1;
 	float maxx = 0;
 	float miny = 1;
@@ -172,7 +159,7 @@ int main() {
 
 		// update 16 bit depth matrix
 		depth.data = (uchar*) xnDepthGenerator.GetDepthMap();
-		//xnImgeGenertor.GetGrayscale8ImageMap()
+		//xnImgeGenertor.GetGrayscale8ImageMap();
 
 		// update rgb image
 		//rgb.data = (uchar*) xnImgeGenertor.GetRGB24ImageMap(); // segmentation fault here
@@ -187,87 +174,65 @@ int main() {
 		// extract ROI
 		Rect roi(xMin, yMin, xMax - xMin, yMax - yMin);
 
-        Point rightttop(xMax-slope,yMin);
-        Point rightbot(xMax,yMax);
-        Point leftbot(xMin,yMax);
-        Point lefttop(xMin+slope,yMin);
-        vector< vector<Point> >  co_ordinates;
-        co_ordinates.push_back(vector<Point>());
-        co_ordinates[0].push_back(rightttop);
-        co_ordinates[0].push_back(rightbot);
-        co_ordinates[0].push_back(leftbot);
-        co_ordinates[0].push_back(lefttop);
+    Point rightttop(xMax-slope,yMin);
+    Point rightbot(xMax,yMax);
+    Point leftbot(xMin,yMax);
+    Point lefttop(xMin+slope,yMin);
+    vector< vector<Point> >  trapezoid;
+    trapezoid.push_back(vector<Point>());
+    trapezoid[0].push_back(rightttop);
+    trapezoid[0].push_back(rightbot);
+    trapezoid[0].push_back(leftbot);
+    trapezoid[0].push_back(lefttop);
 
-        Mat touchRoi = touch(roi);
+    Mat touchRoi = touch(roi);
 
 		// find touch points
 		vector< vector<Point2i> > contours;
 		vector<Point2f> touchPoints;
 		findContours(touchRoi, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, Point2i(xMin, yMin));
-        float fslope = slope; // slope as float for calc
-        for (unsigned int i=0; i<contours.size(); i++) {
+    float fslope = slope; // slope as float for calc
+		float slopePerPix = fslope / (yMax-yMin);
+    for (unsigned int i=0; i<contours.size(); i++) {
 			Mat contourMat(contours[i]);
 			// find touch points by area thresholding
 			if ( contourArea(contourMat) > touchMinArea ) {
+				// Touch is inside rectangle ROI
 				Scalar center = mean(contourMat);
-                float slopePerPix = fslope / (yMax-yMin);
-                float touchx = static_cast<int>(center[0] - xMin);
-                float touchy = static_cast<int>(center[1] - yMin);
-                float xfromcentre = touchx - (xMax-xMin)/2;
-                float slopedAtCurrY = ((yMax-yMin) - touchy) * slopePerPix;
-                float pctfromcentre = xfromcentre / (((xMax - xMin)/2)-slopedAtCurrY);
+        float touchx = center[0] - xMin;
+        float touchy = center[1] - yMin;
+        float slopedAtCurrY = ((yMax-yMin) - touchy) * slopePerPix;
 
-                int touchX = center[0];
-                int touchY = center[1];
-                if (pctfromcentre > -1 && pctfromcentre < 1) {
-                    Point2i touchPoint(touchX, touchY);
-				    touchPoints.push_back(touchPoint);
-                }
+				if (touchx < (xMax-xMin-slopedAtCurrY) && touchx > slopedAtCurrY) {
+					// Touch is inside trapezoid
+					Point2f touchPoint(touchx, touchy);
+					touchPoints.push_back(touchPoint);
+				}
 			}
 		}
 
-		// send TUIO cursors
-
-	//	time = TuioTime::getSessionTime();
-	//	tuio->initFrame(time);
-
 		for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
-            float slopePerPix = fslope / (yMax-yMin);
-            float touchy = static_cast<int>(touchPoints[i].y - yMin);
-            float slopedAtCurrHeight = ((yMax-yMin) - touchy) * slopePerPix;
+      float slopedAtCurrHeight = ((yMax-yMin) - touchPoints[i].y) * slopePerPix;
 
-			float cursorX = (touchPoints[i].x - xMin) / ((xMax - xMin)-slopedAtCurrHeight);
-			float cursorY = 1 - (touchPoints[i].y - yMin)/(yMax - yMin);
-            printf("cursorX: %f, cursorY: %f\n", cursorX, cursorY);
+			float cursorX = (touchPoints[i].x - slopedAtCurrHeight) / (xMax - xMin - 2 * slopedAtCurrHeight);
+			float cursorY = 1 - (touchPoints[i].y) / (yMax - yMin);
+      printf("cursorX: %f, cursorY: %f\n", cursorX, cursorY);
 
-            // record touched area
+      // record touched area
 			if (cursorX < minx) minx = cursorX;
 			if (cursorX > maxx) maxx = cursorX;
 			if (cursorY < miny) miny = cursorY;
 			if (cursorY > maxy) maxy = cursorY;
-
-			// printf("Touch found at %f, %f\n", cursorX, cursorY);
-		/*	TuioCursor* cursor = tuio->getClosestTuioCursor(cursorX,cursorY);
-			// TODO improve tracking (don't move cursors away, that might be closer to another touch point)
-			if (cursor == NULL || cursor->getTuioTime() == time) {
-				tuio->addTuioCursor(cursorX,cursorY);
-			} else {
-				tuio->updateTuioCursor(cursor, cursorX, cursorY);
-			}*/
 		}
-
-		// tuio->removeUntouchedStoppedCursors();
-		// tuio->stopUntouchedMovingCursors();
-		// tuio->commitFrame();
 
 		// draw debug frame
 		depth.convertTo(depth8, CV_8U, 255 / debugFrameMaxDepth); // render depth to debug frame
 		cvtColor(depth8, debug, CV_GRAY2BGR);
 		debug.setTo(debugColor0, touch);  // touch mask
-		polylines(debug, co_ordinates, true, debugColor1, 3); // surface boundaries
+		polylines(debug, trapezoid, true, debugColor1, 3); // surface boundaries
 
-        for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
-			circle(debug, touchPoints[i], 5, debugColor2, CV_FILLED);
+    for (unsigned int i=0; i<touchPoints.size(); i++) { // touch points
+			circle(debug, Point2i(touchPoints[i].x + xMin, touchPoints[i].y + yMin), 5, debugColor2, CV_FILLED);
 		}
 
 		// render debug frame (with sliders)
@@ -278,6 +243,6 @@ int main() {
 	printf("Min X is %f\n", minx);
 	printf("Max X is %f\n", maxx);
 	printf("Min Y is %f\n", miny);
-    printf("Max Y is %f\n", maxy);
+  printf("Max Y is %f\n", maxy);
 	return 0;
 }
