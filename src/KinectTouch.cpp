@@ -34,13 +34,6 @@ using namespace xn;
 		return rc;													\
 	}
 
-// TUIO
-
-#include "TuioServer.h"
-using namespace TUIO;
-
-// TODO smoothing using kalman filter
-
 //---------------------------------------------------------------------------
 // Globals
 //---------------------------------------------------------------------------
