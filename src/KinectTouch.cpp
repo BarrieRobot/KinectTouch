@@ -13,7 +13,11 @@
  * 3. use your table as a giant touchpad
  */
 
+#include <sstream>
+#include <string>
+
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 using namespace std;
@@ -42,8 +46,6 @@ using namespace xn;
 xn::Context xnContext;
 xn::DepthGenerator xnDepthGenerator;
 xn::ImageGenerator xnImgeGenertor;
-
-bool mousePressed = false;
 
 //---------------------------------------------------------------------------
 // Functions
@@ -82,6 +84,31 @@ void average(vector<Mat1s>& frames, Mat1s& mean) {
 	acc.convertTo(mean, CV_16SC1);
 }
 
+	int xMin = 124;
+	int xMax = 540;
+	int yMin = 124;
+	int yMax = 413;
+	int slope = 23;
+
+void parse_setting (string str) {
+	int i;
+	string delimiter = "=";
+	string token = str.substr(0, str.find(delimiter));
+	str.erase(0, str.find(delimiter) + delimiter.length());
+	std::istringstream(str) >> i;
+	if (token.compare("minx") == 0) {
+		xMin = i;
+	} else if (token.compare("maxx") == 0) {
+		xMax = i;
+	} else if (token.compare("miny") == 0) {
+		yMin = i;
+	} else if (token.compare("maxy") == 0) {
+		yMax = i;
+	} else if (token.compare("slope") == 0) {
+		slope = i;
+	}
+}
+
 int main() {
 
 	const unsigned int nBackgroundTrain = 30;
@@ -97,16 +124,26 @@ int main() {
 	const Scalar debugColor1(255,0,0);
 	const Scalar debugColor2(255,255,255);
 
+
+	std::ifstream file("/home/jonathan/catkin_ws/src/kt/src/settings.txt");
+  std::string str;
+  while (std::getline(file, str))
+  {
+		parse_setting(str);
+  }
+	file.close();
+
+	printf("MinX=%d\n", xMin);
+	printf("MaxX=%d\n", xMax);
+	printf("MinY=%d\n", yMin);
+	printf("MaxY=%d\n", yMax);
+	printf("Slope=%d\n", slope);
+
 	// int xMin = 110;
 	// int xMax = 560;
 	// int yMin = 120;
 	// int yMax = 320;
 
-	int xMin = 124;
-	int xMax = 540;
-	int yMin = 124;
-	int yMax = 413;
-	int slope = 23;
 
 	Mat1s depth(480, 640); // 16 bit depth (in millimeters)
 	Mat1b depth8(480, 640); // 8 bit depth
